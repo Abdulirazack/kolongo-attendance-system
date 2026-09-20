@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KOLONGO TANZANIA LIMITED - Attendance System</title>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root{
+      --primary:#0056b3;
+      --secondary:#28a745;
+      --danger:#dc3545;
+      --warning:#ffc107;
+      --dark:#343a40;
+      --light:#f8f9fa;
+    }
+
+    *{ box-sizing:border-box; }
+    html, body{
+      margin:0;
+      padding:0;
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background:linear-gradient(135deg,#eef5ff,#e9ecef);
+      min-height:100vh;
+      color:#222;
+    }
+
+    body{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:20px;
+    }
+
+    .container{
+      width:100%;
+      max-width:1100px;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+      padding:24px;
+    }
+
+    h2,h3,h4,h5{
+      margin:0 0 18px;
+      text-align:center;
+    }
+
+    h2{
+      color:var(--primary);
+      border-bottom:2px solid var(--primary);
+      padding-bottom:12px;
+      margin-bottom:20px;
+    }
+
+    .page{ display:none; }
+    .page.active{ display:block; }
+
+    .tabs-container{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      background:#f1f3f5;
+      padding:8px;
+      border-radius:12px;
+      margin:18px 0 20px;
+    }
+
+    .tab-btn{
+      flex:1 1 180px;
+      padding:12px 14px;
+      border:none;
+      border-radius:10px;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      background:transparent;
+      color:var(--dark);
+    }
+
+    .tab-btn:hover{ background:#e3e6ea; }
+    .tab-btn.active-tab{
+      background:var(--primary);
+      color:#fff;
+    }
+
+    .form-group{ margin-bottom:16px; }
+
+    label{
+      display:block;
+      margin-bottom:8px;
+      font-weight:700;
+      color:#292929;
+    }
+
+    input, select{
+      width:100%;
+      padding:12px 14px;
+      border:1px solid #ced4da;
+      border-radius:10px;
+      font-size:15px;
+      outline:none;
+      background:#fff;
+    }
+
+    input:focus, select:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(0,86,179,.12);
+    }
+
+    button{
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      transition:.25s ease;
+    }
+
+    .btn{ padding:12px 18px; font-size:15px; }
+    .btn-block{ width:100%; }
+    .btn-primary{ background:var(--primary); color:white; }
+    .btn-primary:hover{ background:#00479e; }
+    .btn-success{ background:var(--secondary); color:white; }
+    .btn-success:hover{ background:#1f8d3d; }
+    .btn-danger{ background:var(--danger); color:white; }
+    .btn-danger:hover{ background:#b92d3b; }
+    .btn-warning{ background:var(--warning); color:#212529; }
+    .btn-warning:hover{ background:#d9a500; }
+    .btn-secondary{ background:#6c757d; color:#fff; }
+
+    .time-box-buttons{
+      display:flex;
+      gap:12px;
+      margin-top:18px;
+      flex-wrap:wrap;
+    }
+
+    .time-box-buttons button{
+      flex:1 1 220px;
+      padding:18px 14px;
+      font-size:18px;
+      min-height:62px;
+    }
+
+    .admin-box{
+      padding:18px 18px 10px;
+      border-radius:12px;
+      background:#fff3cd;
+      border:1px solid #ffeeba;
+      margin-bottom:18px;
+    }
+
+    .small-note{
+      text-align:center;
+      color:#555;
+      font-size:14px;
+      line-height:1.6;
+      margin:10px 0 0;
+    }
+
+    .status-bar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:10px;
+      padding:8px 0 14px;
+      font-weight:600;
+      color:#333;
+    }
+
+    .sub-page{ display:none; }
+    .sub-page.active-sub{ display:block; }
+
+    .export-section{
+      background:#edf2f7;
+      border-radius:12px;
+      padding:14px;
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin:12px 0 18px;
+    }
+
+    .table-wrap{ overflow-x:auto; border-radius:12px; border:1px solid #e5e7eb; }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+      min-width:780px;
+    }
+
+    th, td{
+      padding:12px 10px;
+      border:1px solid #e6eaf0;
+      text-align:left;
+      vertical-align:top;
+    }
+
+    th{
+      background:#343a40;
+      color:#fff;
+    }
+
+    tbody tr:nth-child(even){ background:#f8f9fa; }
+
+    .action-row{ display:flex; gap:8px; flex-wrap:wrap; }
+    .action-row button{ padding:8px 12px; font-size:12px; }
+    .empty-state{ text-align:center; padding:18px; color:#555; font-weight:600; }
+
+    .danger-box{
+      color:var(--danger);
+      font-weight:700;
+      text-align:center;
+      margin:10px 0 18px;
+      padding:12px;
+      background:#fff5f5;
+      border:1px solid #f8d7da;
+      border-radius:10px;
+    }
+
+    .logout-btn{ margin-top:24px; }
+
+    @media (max-width: 768px){
+      .container{ padding:18px 14px; }
+      .tabs-container{ display:block; }
+      .tab-btn{ width:100%; margin-bottom:8px; }
+      .time-box-buttons{ flex-direction:column; }
+      .time-box-buttons button{ width:100%; }
+      .export-section{ flex-direction:column; }
+      .export-section button{ width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>KOLONGO TANZANIA LIMITED</h2>
+
+    <div id="loginPage" class="page active">
+      <div id="adminRegisterArea" class="admin-box" style="display:none;">
+        <h4>⚙️ Usajili wa Admin (Mara ya Kwanza Tu)</h4>
+        <p class="small-note">Tengeneza akaunti ya Admin ili kuanza kutumia mfumo kwa internet.</p>
+
+        <div class="form-group">
+          <label>Unda Admin ID:</label>
+          <input type="text" id="regAdminId" placeholder="Mfano: admin au EMP001" />
+        </div>
+
+        <div class="form-group">
+          <label>Unda Neno la Siri:</label>
+          <input type="password" id="regAdminPass" placeholder="Weka password imara" />
+        </div>
+
+        <button class="btn btn-success btn-block" onclick="registerAdminAccount()">Sajili Akaunti ya Admin</button>
+      </div>
+
+      <h3>Mfumo wa Mahudhurio ya Wafanyakazi</h3>
+
+      <div class="tabs-container">
+        <button id="btnEmpNav" class="tab-btn active-tab" onclick="switchLoginType('employee')">Mfanyakazi (Time-In / Out)</button>
+        <button id="btnAdminNav" class="tab-btn" onclick="switchLoginType('admin')">Admin Panel</button>
+      </div>
+
+      <div id="employeeArea">
+        <p class="small-note">Weka ID yako uliyosajiliwa na Admin kisha bofya Time-In au Time-Out.</p>
+
+        <div class="form-group">
+          <label for="empAttendanceId">Namba ya ID ya Mfanyakazi:</label>
+          <input type="text" id="empAttendanceId" placeholder="Ingiza ID yako (Mfano: EMP001)" />
+        </div>
+
+        <div class="time-box-buttons">
+          <button class="btn btn-success" onclick="quickRecordTime('Time-In')">⬇️ TIME IN</button>
+          <button class="btn btn-danger" onclick="quickRecordTime('Time-Out')">⬆️ TIME OUT</button>
+        </div>
+      </div>
+
+      <div id="adminArea" style="display:none;">
+        <div class="form-group">
+          <label for="adminLoginId">Admin ID:</label>
+          <input type="text" id="adminLoginId" placeholder="Ingiza Admin ID" />
+        </div>
+
+        <div class="form-group">
+          <label for="adminLoginPass">Password:</label>
+          <input type="password" id="adminLoginPass" placeholder="Ingiza Neno la Siri" />
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="handleAdminLogin()">Ingia Admin Dashboard</button>
+      </div>
+    </div>
+
+    <div id="adminPage" class="page">
+      <div class="status-bar">
+        <span>Tarehe ya Mfumo: <strong id="currentDate2"></strong></span>
+        <span id="loginStatusLabel">Logged in as Admin</span>
+      </div>
+
+      <div class="tabs-container">
+        <button class="tab-btn active-tab" id="tabReport" onclick="switchAdminTab('subReport')">📊 Ripoti & Export</button>
+        <button class="tab-btn" id="tabManage" onclick="switchAdminTab('subManage')">➕ Sajili/Hariri Mfanyakazi</button>
+        <button class="tab-btn" id="tabDelete" onclick="switchAdminTab('subDelete')">🗑 Futa Mfanyakazi/Data</button>
+        <button class="tab-btn" id="tabSettings" onclick="switchAdminTab('subSettings')">⚙️ Settings</button>
+      </div>
+
+      <div id="subReport" class="sub-page active-sub">
+        <h5>Ripoti ya Mahudhurio & Siku Jumla za Kazi</h5>
+
+        <div class="export-section">
+          <button class="btn btn-success" onclick="exportToExcel()">Excel (CSV)</button>
+          <button class="btn btn-secondary" onclick="exportToPDF()">Chapa / Save PDF</button>
+          <button class="btn btn-secondary" onclick="loadAttendanceData()">Onyesha Upya</button>
+        </div>
+
+        <div id="pdfPrintArea" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Jina Kamili</th>
+                <th>Idara</th>
+                <th>Siku za Kazi</th>
+                <th>Tarehe</th>
+                <th>Time-In</th>
+                <th>Time-Out</th>
+                <th>Jumla Siku</th>
+                <th>Kitendo</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="subManage" class="sub-page">
+        <h5 id="formTitle">Sajili Mfanyakazi Mpya</h5>
+        <input type="hidden" id="editIndex" value="" />
+
+        <div class="form-group">
+          <label>Namba ya ID ya Mfanyakazi:</label>
+          <input type="text" id="newEmpId" placeholder="Mfano: EMP001" />
+        </div>
+
+        <div class="form-group">
+          <label>Jina Kamili:</label>
+          <input type="text" id="newEmpName" placeholder="Mfano: Juma Hamis" />
+        </div>
+
+        <div class="form-group">
+          <label>Nafasi / Idara:</label>
+          <input type="text" id="newEmpDept" placeholder="Mfano: IT, Uhasibu, Kiwanda" />
+        </div>
+
+        <div class="form-group">
+          <label>Siku Anazopaswa Kuwa Kazini:</label>
+          <select id="newEmpDays">
+            <option value="Jumatatu - Ijumaa">Jumatatu - Ijumaa</option>
+            <option value="Jumatatu - Jumamosi">Jumatatu - Jumamosi</option>
+            <option value="Kila Siku (Mon - Sun)">Kila Siku (Jumatatu - Jumapili)</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
+          <button id="btnSave" class="btn btn-success" onclick="saveEmployee()" style="flex:1;">Hifadhi Mfanyakazi</button>
+          <button id="btnCancel" class="btn btn-secondary" onclick="resetEmployeeForm()" style="display:none;">Ghairi</button>
+        </div>
+
+        <h5>Wafanyakazi Walioposajiliwa Kwenye Mfumo</h5>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Jina Kamili</th>
+                <th>Idara</th>
+                <th>Siku za Kazi</th>
+                <th>Marekebisho</th>
+              </tr>
+            </thead>
+            <tbody id="employeeManageTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="subDelete" class="sub-page">
+        <h5>Ufutaji wa Wafanyakazi na Kumbukumbu</h5>
+        <div class="danger-box">
+          Tahadhari: Vitendo hivi vinafuta kabisa data. Hakikisha umejipanga vizuri!
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Jina Kamili</th>
+                <th>Idara</th>
+                <th>Kumuondoa</th>
+              </tr>
+            </thead>
+            <tbody id="employeeDeleteTableBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:30px; border-top:2px dashed #ccc; padding-top:20px; text-align:center;">
+          <h5>Futa Ripoti Yote ya Mahudhurio</h5>
+          <p class="small-note">Inafaa kutumika mwisho wa mwezi baada ya kupakua ripoti yako ya Excel.</p>
+          <button class="btn btn-danger" onclick="clearAllAttendanceData()">Futa Kumbukumbu Zote za Mahudhurio</button>
+        </div>
+      </div>
+
+      <div id="subSettings" class="sub-page">
+        <h5>Mipangilio ya Akaunti ya Admin</h5>
+
+        <div class="form-group">
+          <label>Admin ID ya Sasa:</label>
+          <input type="text" id="settingsAdminId" readonly />
+        </div>
+
+        <div class="form-group">
+          <label>Neno la Siri la Sasa:</label>
+          <input type="password" id="currentPassInput" placeholder="Ingiza password yako ya sasa" />
+        </div>
+
+        <div class="form-group">
+          <label>Neno la Siri Jipya:</label>
+          <input type="password" id="newPassInput" placeholder="Tengeneza password mpya" />
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="changeAdminPassword()">Hifadhi Neno la Siri Jipya</button>
+      </div>
+
+      <button class="btn btn-danger btn-block logout-btn" onclick="logout()">Toka (Logout)</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let state = {
+      admin: null,
+      employees: [],
+      attendance: []
+    };
+
+    function todayDateSw() {
+      return new Date().toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function todayDateISO() {
+      const d = new Date();
+      return d.toISOString().slice(0, 10);
+    }
+
+    function nowTimeSw() {
+      return new Date().toLocaleTimeString('sw-TZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function setCurrentDate() {
+      document.getElementById('currentDate2').innerText = todayDateSw();
+    }
+
+    function showAlert(msg) {
+      alert(msg);
+    }
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+    }
+
+    function switchLoginType(type) {
+      const employeeArea = document.getElementById('employeeArea');
+      const adminArea = document.getElementById('adminArea');
+      const empNav = document.getElementById('btnEmpNav');
+      const adminNav = document.getElementById('btnAdminNav');
+
+      employeeArea.style.display = 'none';
+      adminArea.style.display = 'none';
+      empNav.classList.remove('active-tab');
+      adminNav.classList.remove('active-tab');
+
+      if (type === 'employee') {
+        employeeArea.style.display = 'block';
+        empNav.classList.add('active-tab');
+      } else if (type === 'admin') {
+        adminArea.style.display = 'block';
+        adminNav.classList.add('active-tab');
+      }
+    }
+
+    function switchAdminTab(subPageId) {
+      document.querySelectorAll('.sub-page').forEach(page => page.classList.remove('active-sub'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.id !== 'btnEmpNav' && btn.id !== 'btnAdminNav') {
+          btn.classList.remove('active-tab');
+        }
+      });
+
+      document.getElementById(subPageId).classList.add('active-sub');
+
+      if (subPageId === 'subReport') {
+        document.getElementById('tabReport').classList.add('active-tab');
+        loadAttendanceData();
+      } else if (subPageId === 'subManage') {
+        document.getElementById('tabManage').classList.add('active-tab');
+        loadEmployeesData();
+      } else if (subPageId === 'subDelete') {
+        document.getElementById('tabDelete').classList.add('active-tab');
+        loadEmployeesData();
+      } else if (subPageId === 'subSettings') {
+        document.getElementById('tabSettings').classList.add('active-tab');
+      }
+    }
+
+    async function registerAdminAccount() {
+      const id = document.getElementById('regAdminId').value.trim();
+      const pass = document.getElementById('regAdminPass').value.trim();
+
+      if (!id || !pass) {
+        showAlert('Tafadhali jaza ID na Password unayotaka kutumia kama Admin!');
+        return;
+      }
+
+      const settingsRef = db.collection('settings').doc('admin');
+      const exists = await settingsRef.get();
+
+      if (exists.exists) {
+        showAlert('Akaunti ya Admin tayari ipo kwenye mfumo. Tafadhali ingia kwa login.');
+        return;
+      }
+
+      await settingsRef.set({
+        adminId: id,
+        password: pass,
+        createdAt: new Date().toISOString()
+      });
+
+      state.admin = { adminId: id, password: pass };
+      document.getElementById('settingsAdminId').value = id;
+      document.getElementById('adminRegisterArea').style.display = 'none';
+      showAlert('Akaunti ya Admin imesajiliwa kwa mafanikio!');
+    }
+
+    async function handleAdminLogin() {
+      const idInput = document.getElementById('adminLoginId').value.trim();
+      const passInput = document.getElementById('adminLoginPass').value.trim();
+
+      const adminDoc = await db.collection('settings').doc('admin').get();
+
+      if (!adminDoc.exists) {
+        showAlert('Tafadhali jisajili kwanza akaunti ya Admin!');
+        return;
+      }
+
+      const admin = adminDoc.data();
+      if (idInput.toLowerCase() === admin.adminId.toLowerCase() && passInput === admin.password) {
+        state.admin = admin;
+        document.getElementById('settingsAdminId').value = admin.adminId;
+        document.getElementById('loginStatusLabel').innerText = 'Logged in as: ' + admin.adminId;
+        showPage('adminPage');
+        switchAdminTab('subReport');
+      } else {
+        showAlert('ID au Password ya Admin si sahihi!');
+      }
+    }
+
+    async function changeAdminPassword() {
+      if (!state.admin) {
+        showAlert('Kwanza ingia kama Admin!');
+        return;
+      }
+
+      const currentPass = document.getElementById('currentPassInput').value;
+      const newPass = document.getElementById('newPassInput').value.trim();
+
+      if (currentPass !== state.admin.password) {
+        showAlert('Neno la siri la sasa si sahihi!');
+        return;
+      }
+
+      if (!newPass) {
+        showAlert('Tafadhali andika neno la siri jipya!');
+        return;
+      }
+
+      await db.collection('settings').doc('admin').update({ password: newPass });
+      state.admin.password = newPass;
+      document.getElementById('currentPassInput').value = '';
+      document.getElementById('newPassInput').value = '';
+      showAlert('Neno la siri la Admin limebadilishwa kwa mafanikio!');
+    }
+
+    async function loadEmployeesData() {
+      const snapshot = await db.collection('employees').orderBy('createdAt', 'asc').get();
+      state.employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderEmployeeManageTable();
+      renderEmployeeDeleteTable();
+    }
+
+    function renderEmployeeManageTable() {
+      const tbody = document.getElementById('employeeManageTableBody');
+      tbody.innerHTML = '';
+
+      if (!state.employees.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Hakuna mfanyakazi aliyesajiliwa.</td></tr>';
+        return;
+      }
+
+      state.employees.forEach(emp => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${emp.id}</td>
+            <td>${emp.name}</td>
+            <td>${emp.dept}</td>
+            <td>${emp.days || 'Jumatatu - Ijumaa'}</td>
+            <td class="action-row">
+              <button class="btn btn-warning" onclick="startEditEmployee('${emp.id}')">Hariri</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderEmployeeDeleteTable() {
+      const tbody = document.getElementById('employeeDeleteTableBody');
+      tbody.innerHTML = '';
+
+      if (!state.employees.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Hakuna wafanyakazi.</td></tr>';
+        return;
+      }
+
+      state.employees.forEach(emp => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${emp.id}</td>
+            <td>${emp.name}</td>
+            <td>${emp.dept}</td>
+            <td class="action-row">
+              <button class="btn btn-danger" onclick="deleteEmployee('${emp.id}')">Futa Mfanyakazi</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function saveEmployee() {
+      const id = document.getElementById('newEmpId').value.trim();
+      const name = document.getElementById('newEmpName').value.trim();
+      const dept = document.getElementById('newEmpDept').value.trim();
+      const days = document.getElementById('newEmpDays').value;
+      const editIndex = document.getElementById('editIndex').value;
+
+      if (!id || !name || !dept) {
+        showAlert('Tafadhali jaza taarifa zote!');
+        return;
+      }
+
+      if (editIndex === '') {
+        const existing = state.employees.find(e => e.id.toLowerCase() === id.toLowerCase());
+        if (existing) {
+          showAlert('Mfanyakazi mwenye ID hii tayari amesajiliwa!');
+          return;
+        }
+
+        await db.collection('employees').doc(id).set({
+          id,
+          name,
+          dept,
+          days,
+          createdAt: new Date().toISOString()
+        });
+
+        showAlert('Mfanyakazi mpya amesajiliwa kikamilifu!');
+      } else {
+        await db.collection('employees').doc(id).set({
+          id,
+          name,
+          dept,
+          days,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        showAlert('Mabadiliko ya mfanyakazi yamehifadhiwa vizuri!');
+      }
+
+      await loadEmployeesData();
+      resetEmployeeForm();
+    }
+
+    function startEditEmployee(empId) {
+      const emp = state.employees.find(x => x.id === empId);
+      if (!emp) return;
+
+      document.getElementById('newEmpId').value = emp.id;
+      document.getElementById('newEmpName').value = emp.name;
+      document.getElementById('newEmpDept').value = emp.dept;
+      document.getElementById('newEmpDays').value = emp.days || 'Jumatatu - Ijumaa';
+      document.getElementById('editIndex').value = empId;
+
+      document.getElementById('formTitle').innerText = '📝 Hariri Taarifa za Mfanyakazi';
+      document.getElementById('btnSave').innerText = 'Hifadhi Mabadiliko';
+      document.getElementById('btnCancel').style.display = 'inline-block';
+
+      switchAdminTab('subManage');
+    }
+
+    async function deleteEmployee(empId) {
+      const emp = state.employees.find(x => x.id === empId);
+      if (!emp) return;
+
+      const confirmDelete = confirm(`Je, una uhakika kabisa unataka kumuondoa mfanyakazi huyu: ${emp.name}?`);
+      if (!confirmDelete) return;
+
+      await db.collection('employees').doc(empId).delete();
+
+      const attendanceSnapshot = await db.collection('attendance').where('empId', '==', empId).get();
+      const batch = db.batch();
+      attendanceSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
+      await loadEmployeesData();
+      await loadAttendanceData();
+    }
+
+    function resetEmployeeForm() {
+      document.getElementById('newEmpId').value = '';
+      document.getElementById('newEmpName').value = '';
+      document.getElementById('newEmpDept').value = '';
+      document.getElementById('newEmpDays').value = 'Jumatatu - Ijumaa';
+      document.getElementById('editIndex').value = '';
+      document.getElementById('formTitle').innerText = 'Sajili Mfanyakazi Mpya';
+      document.getElementById('btnSave').innerText = 'Hifadhi Mfanyakazi';
+      document.getElementById('btnCancel').style.display = 'none';
+    }
+
+    async function quickRecordTime(type) {
+      const idInput = document.getElementById('empAttendanceId').value.trim();
+
+      if (!idInput) {
+        showAlert('Tafadhali ingiza Namba yako ya ID!');
+        return;
+      }
+
+      const emp = state.employees.find(e => e.id.toLowerCase() === idInput.toLowerCase());
+      if (!emp) {
+        showAlert('❌ ID hii haijasajiliwa kwenye mfumo! Wasiliana na Admin ili akusajili.');
+        return;
+      }
+
+      const today = todayDateISO();
+      const recordId = today + '_' + emp.id;
+      const ref = db.collection('attendance').doc(recordId);
+      const doc = await ref.get();
+
+      let record = doc.exists ? doc.data() : {
+        id: recordId,
+        empId: emp.id,
+        name: emp.name,
+        dept: emp.dept,
+        days: emp.days || 'Jumatatu - Ijumaa',
+        date: today,
+        checkIn: '-',
+        checkOut: '-'
+      };
+
+      if (type === 'Time-In') {
+        if (record.checkIn !== '-') {
+          const overwrite = confirm('Ulishasaini TIME-IN tayari leo. Je, unataka kusasisha muda wako wa kuingia kuwa wa sasa?');
+          if (!overwrite) return;
+        }
+
+        record.checkIn = nowTimeSw();
+        showAlert(`✅ Ndg. ${emp.name}, umesaini KUINGIA (Time-In) saa ${record.checkIn}`);
+      } else {
+        if (record.checkOut !== '-') {
+          const overwrite = confirm('Ulishasaini TIME-OUT tayari leo. Je, unataka kusasisha muda wako wa kutoka kuwa wa sasa?');
+          if (!overwrite) return;
+        }
+
+        record.checkOut = nowTimeSw();
+        showAlert(`✅ Ndg. ${emp.name}, umesaini KUTOKA (Time-Out) saa ${record.checkOut}`);
+      }
+
+      await ref.set(record, { merge: true });
+      document.getElementById('empAttendanceId').value = '';
+      await loadAttendanceData();
+    }
+
+    async function loadAttendanceData() {
+      const snapshot = await db.collection('attendance').orderBy('date', 'asc').get();
+      state.attendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderAttendanceTable();
+    }
+
+    function countPresentDays(empId) {
+      return state.attendance.filter(r => r.empId === empId && r.checkIn !== '-').length;
+    }
+
+    function renderAttendanceTable() {
+      const tbody = document.getElementById('reportTableBody');
+      tbody.innerHTML = '';
+
+      if (!state.attendance.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Hakuna kumbukumbu ya mahudhurio kwa sasa.</td></tr>';
+        return;
+      }
+
+      state.attendance.forEach(r => {
+        const totalDays = countPresentDays(r.empId);
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.empId}</td>
+            <td>${r.name}</td>
+            <td>${r.dept}</td>
+            <td>${r.days || 'Jumatatu - Ijumaa'}</td>
+            <td>${r.date}</td>
+            <td style="color:var(--secondary); font-weight:bold;">${r.checkIn}</td>
+            <td style="color:var(--danger); font-weight:bold;">${r.checkOut}</td>
+            <td style="font-weight:bold; color:var(--primary); text-align:center;">Siku ${totalDays}</td>
+            <td class="action-row">
+              <button class="btn btn-danger" onclick="deleteSpecificRecord('${r.id}')">Futa Siku Hii</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function deleteSpecificRecord(recordId) {
+      const confirmDelete = confirm('Je, una uhakika unataka kufuta taarifa ya siku hii?');
+      if (!confirmDelete) return;
+
+      await db.collection('attendance').doc(recordId).delete();
+      await loadAttendanceData();
+    }
+
+    async function clearAllAttendanceData() {
+      const confirmDelete = confirm('Je, una uhakika unataka KUFUTA ripoti yote ya mahudhurio? Kitendo hiki hakiwezi kurudishwa nyuma!');
+      if (!confirmDelete) return;
+
+      const snapshot = await db.collection('attendance').get();
+      const batch = db.batch();
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+
+      await loadAttendanceData();
+      showAlert('Ripoti yote imefutwa.');
+    }
+
+    function exportToExcel() {
+      if (!state.attendance.length) {
+        showAlert('Hakuna ripoti yoyote ya kupakua kwa sasa!');
+        return;
+      }
+
+      const rows = [
+        ['ID', 'Jina Kamili', 'Idara', 'Siku za Kazi', 'Tarehe', 'Time-In', 'Time-Out', 'Jumla ya Siku']
+      ];
+
+      state.attendance.forEach(r => {
+        const totalDays = countPresentDays(r.empId);
+        rows.push([
+          r.empId,
+          r.name,
+          r.dept,
+          r.days || 'Jumatatu - Ijumaa',
+          r.date,
+          r.checkIn,
+          r.checkOut,
+          'Siku ' + totalDays
+        ]);
+      });
+
+      const csvContent = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Ripoti_Mahudhurio_Kolongo.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function exportToPDF() {
+      const printContent = document.getElementById('pdfPrintArea').innerHTML;
+      document.body.innerHTML = `
+        <div style="padding:40px; font-family:sans-serif;">
+          <h2 style="text-align:center; color:#0056b3; margin-bottom:5px;">KOLONGO TANZANIA LIMITED</h2>
+          <h4 style="text-align:center; margin-top:0; color:#333;">RIPOTI RASMI YA MAHUDHURIO YA WAFANYAKAZI</h4>
+          <p style="text-align:center; font-size:12px;">Imechapishwa tarehe: ${new Date().toLocaleDateString('sw-TZ')}</p>
+          <hr style="border:1px solid #0056b3; margin-bottom:20px;">
+          ${printContent}
+        </div>
+      `;
+      window.print();
+      window.location.reload();
+    }
+
+    function logout() {
+      state.admin = null;
+      document.getElementById('adminLoginId').value = '';
+      document.getElementById('adminLoginPass').value = '';
+      document.getElementById('currentPassInput').value = '';
+      document.getElementById('newPassInput').value = '';
+      showPage('loginPage');
+      switchLoginType('employee');
+    }
+
+    async function checkAdminExists() {
+      const adminDoc = await db.collection('settings').doc('admin').get();
+      if (!adminDoc.exists) {
+        document.getElementById('adminRegisterArea').style.display = 'block';
+      } else {
+        state.admin = adminDoc.data();
+        document.getElementById('settingsAdminId').value = state.admin.adminId;
+      }
+    }
+
+    async function init() {
+      setCurrentDate();
+      await checkAdminExists();
+      await loadEmployeesData();
+      await loadAttendanceData();
+    }
+
+    init();
+  </script>
+</body>
+</html>
